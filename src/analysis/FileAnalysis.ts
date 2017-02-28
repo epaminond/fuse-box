@@ -67,6 +67,19 @@ export class FileAnalysis {
         this.skipAnalysis = true;
     }
 
+    public static acornParse(contents: string, file?: File, options?: any) {
+
+        return acorn.parse(contents, {
+            ...options || {}, ...{
+                sourceType: "module",
+                tolerant: true,
+                ecmaVersion: 8,
+                plugins: { es7: true, jsx: true },
+                jsx: { allowNamespacedObjects: true }
+            }
+        });
+
+    }
     /**
      * 
      * 
@@ -76,17 +89,9 @@ export class FileAnalysis {
      */
     public parseUsingAcorn(options?: any) {
         try {
-            this.ast = acorn.parse(this.file.contents, {
-                ...options || {}, ...{
-                    sourceType: "module",
-                    tolerant: true,
-                    ecmaVersion: 8,
-                    plugins: { es7: true, jsx: true },
-                    jsx: { allowNamespacedObjects: true }
-                }
-            });
-        } catch (err) {
-            return PrettyError.errorWithContents(err, this.file);
+            this.ast = FileAnalysis.acornParse(this.file.contents, options);
+        } catch (e) {
+            return PrettyError.errorWithContents(e, this.file);
         }
     }
 
@@ -132,8 +137,15 @@ export class FileAnalysis {
 
 
         ASTTraverse.traverse(this.ast, {
-            pre: (node, parent, prop, idx) =>
-                plugins.forEach(plugin => plugin.onNode(this.file, node, parent))
+            pre: (node, parent, prop, idx) => {
+                plugins.forEach(plugin => plugin.onNode(this.file, node, parent));
+                // user ast plugins
+                if (this.file.context.userAstPlugins) {
+                    this.file.context.userAstPlugins.forEach(handler => handler(this.file, node, parent))
+                }
+            }
+
+
         });
 
         plugins.forEach(plugin => plugin.onEnd(this.file));

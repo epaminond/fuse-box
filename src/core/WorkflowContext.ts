@@ -40,7 +40,8 @@ export interface Plugin {
     onTypescriptTransform?(file: File): any;
     bundleStart?(context: WorkFlowContext): any;
     bundleEnd?(context: WorkFlowContext): any;
-
+    onASTNode?(file: File, node: any, parent: any);
+    onASTComplete?(file: File, node: any, parent: any);
     /**
      * If provided then the dependencies are loaded on the client
      *  before the plugin is invoked
@@ -124,6 +125,8 @@ export class WorkFlowContext {
     public experimentalAliasEnabled = false;
 
     public customCodeGenerator: any;
+
+    public userAstPlugins: any[];
 
     public initCache() {
         this.cache = new ModuleCache(this);

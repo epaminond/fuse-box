@@ -164,6 +164,14 @@ export class ModuleCollection {
      * @memberOf ModuleCollection
      */
     public initPlugins() {
+
+        this.context.plugins.forEach(plugin => {
+            if (utils.isFunction(plugin.onASTNode)) {
+                this.context.userAstPlugins = this.context.userAstPlugins || [];
+                this.context.userAstPlugins.push(plugin.onASTNode);
+            }
+        });
+
         this.context.triggerPluginsMethodOnce("init", [this.context], (plugin) => {
             if (plugin.dependencies) {
                 plugin.dependencies.forEach(mod => {

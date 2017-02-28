@@ -4,6 +4,8 @@ import { Plugin } from "../../core/WorkflowContext";
 
 import * as acorn from "acorn";
 import * as SourceMap from "source-map";
+import { es6Import } from './replacements/ImportReplacement';
+import { replaceNode } from './utils/ReplaceNode';
 
 /**
  * @export
@@ -47,14 +49,28 @@ export class FusionPluginClass implements Plugin {
         file.sourceMap = this.getSourceMap(file, tokens);
     }
 
+    onASTNode(file: File, node: any, parent: any) {
+        if (node.type === "ImportDeclaration") {
+            if (node.source && file.analysis.nodeIsString(node.source)) {
+                const specifiers = [];
+                node.specifiers.forEach(specifier => {
+                    specifiers.push(specifier.imported.name);
+                })
+                const transformedAst = es6Import(specifiers, node.source.value);
+                replaceNode(node, transformedAst);
+                file.analysis.requiresRegeneration = true;
+            }
+        }
+    }
+
     private getSourceMap(file: File, tokens: Array<any>): string {
         const fileContent = file.contents;
+
         const filePath = file.info.fuseBoxPath
         const smGenerator = new SourceMap.SourceMapGenerator({ file: filePath });
 
         tokens.some(token => {
             if (token.type.label === "eof") return true;
-
             const lineInfo = acorn.getLineInfo(fileContent, token.start);
             const mapping = {
                 original: lineInfo,
@@ -62,7 +78,7 @@ export class FusionPluginClass implements Plugin {
                 source: filePath,
                 name: false
             };
-            console.log(mapping);
+
             if (token.type.label === "name") mapping.name = token.value;
 
             smGenerator.addMapping(mapping);
