@@ -1,3 +1,4 @@
+export { FusionPlugin } from './plugins/fusion/FusionPlugin';
 export { VuePlugin } from "./plugins/VuePlugin";
 export { ImageBase64Plugin } from "./plugins/images/ImageBase64Plugin";
 export { CSSResourcePlugin } from "./plugins/stylesheet/CSSResourcePlugin";
